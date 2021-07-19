@@ -8,11 +8,16 @@ host = 0.0.0.0
 port = 80
 
 [audio]
-record_device_id = 0
+record_device_id = 2
 playback_device_id = 1
 record_framerate = 22050
-keyword = larisa
-stopword = stop
+keywords=john june don't jones don
+stopword=stop
+recognizer=ibm
 
-[service]
-wit_access_token = FAKE_TOKEN
+[wit]
+access_token=...
+
+[ibm]
+apikey=...
+url=...

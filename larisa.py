@@ -1,9 +1,9 @@
 import configparser
 import logging
-# import sound.rec as r
 import logic.processor as prc
 import speech_recognition as sr
-
+from ibm_watson import SpeechToTextV1
+from ibm_cloud_sdk_core.authenticators import IAMAuthenticator as IAMA
 
 def start_text_interface(cfg):
     logging.info("Starting text interface. Type `stop` to finish")
@@ -11,8 +11,8 @@ def start_text_interface(cfg):
     while command != "stop":
         print("ask> ", end="")
         command = input()
-        prc.process(command, cfg, logging)
-
+        result = prc.process(command, cfg, logging)
+        print(result)
 
 def start_web_interface(cfg):
     """
@@ -33,17 +33,25 @@ def start_voice_interface(cfg):
     # https://github.com/MycroftAI/mimic1
     # https://pypi.org/project/SpeechRecognition/
 
-    keyword = cfg['audio']['keyword']
+    keywords = cfg['audio']['keywords'].split()
     stopword = cfg['audio']['stopword']
+    recognizer_type = cfg['audio']['recognizer']
+    logging.info(f"Keyword = {keywords}, stopword = {stopword}, Recognizer = {recognizer_type}")
     command = None
+    ibm_auth, ibm_recognizer = None, None
     # use this code: https://stackoverflow.com/questions/48777294/python-app-listening-for-a-keyword-like-cortana
     # get audio from the microphone
     r = sr.Recognizer()
+    # r.dynamic_energy_threshold = False
+
     while command != stopword:
         # wait for a trigger word
         with sr.Microphone() as source:
             print("Waiting for a word ...")
+            r.adjust_for_ambient_noise(source)
             audio = r.listen(source)
+            # test the data comes
+            logging.info(f"Len: {len(audio.frame_data)}, Data: {audio.frame_data[:16]}")
 
         # simple way to replace if you don't have a micro
         # with sr.AudioFile("/mnt/c/dev/voice.wav") as af:
@@ -51,21 +59,48 @@ def start_voice_interface(cfg):
 
         try:
             # recognize a word
-            recognised = r.recognize_wit(audio, key=cfg['service']['wit_access_token'])
-            logging.info(f"word `{recognised}` captured")
+            if 'sphinx' == recognizer_type:
+                logging.info("Using IBM")
+                recognized = r.recognize_sphinx(audio, keyword_entries=[(keyword, 1.0)])
+            elif 'wit' == recognizer_type:
+                recognized = r.recognize_wit(audio, key=cfg['service']['wit']['access_token'])
+            elif 'ibm' == recognizer_type:
+                if ibm_auth is None:
+                    logging.info('Instantiating IBM recognizer')
+                    ibm_auth = IAMA(apikey=cfg['ibm']['apikey'])
+                    ibm_recognizer = SpeechToTextV1(authenticator=ibm_auth)
+                    ibm_recognizer.set_service_url(cfg['ibm']['url'])
+                logging.info('Recognizing IBM')
+                recognized = ibm_recognizer.recognize(audio=audio.get_wav_data(), content_type='audio/wav').get_result()
+                logging.info(recognized)
+                recognized = recognized['results'][0]['alternatives'][0]['transcript'].strip() if recognized['results'] else ''
+
+            logging.info(f"word `{recognized}` captured")
             # if this was a keyword - process a command
-            if recognised == keyword:
-                command_audio = r.listen(source)
-                command = r.recognize_wit(command_audio, key=cfg['service']['wit_access_token'])
+            if recognized.lower() in keywords:
+                print('Waiting for a command...')
+                with sr.Microphone() as source:
+                    r.adjust_for_ambient_noise(source)
+                    command_audio = r.listen(source)
+                if 'sphinx' == recognizer_type:
+                    command = r.recognize_sphinx(command_audio)
+                elif 'wit' == recognizer_type:
+                    command = r.recognize_wit(command_audio, key=cfg['service']['wit']['access_token'])
+                elif 'ibm' == recognizer_type:
+                    command = ibm_recognizer.recognize(audio=command_audio.get_wav_data(), content_type='audio/wav').get_result()
+                    logging.info(command)
+                    command = command['results'][0]['alternatives'][0]['transcript'].strip() if command['results'] else ''
                 # exit on stop word
                 if command == stopword:
+                    logging.info('Exit on stopword')
                     break
                 result = prc.process(command, cfg, logging)
-                # TODO: SPEAK THE RESULT OUT LOUD
+                # TODO: SPEAK THE RESULT
+                print(result)
         except sr.UnknownValueError:
-            print("Could not understand audio")
+            logging.error("Could not understand audio")
         except sr.RequestError as e:
-            print("Could not request results; {0}".format(e))
+            logging.error(f"Could not request results: {e}")
         pass
 
 
