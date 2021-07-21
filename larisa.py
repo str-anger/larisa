@@ -60,11 +60,13 @@ def start_voice_interface(cfg):
         try:
             # recognize a word
             if 'sphinx' == recognizer_type:
-                logging.info("Using IBM")
-                recognized = r.recognize_sphinx(audio, keyword_entries=[(keyword, 1.0)])
+                logging.info("Using sphinx")
+                recognized = r.recognize_sphinx(audio, keyword_entries=[(kw, 1.0) for kw in keywords]).strip()
             elif 'wit' == recognizer_type:
-                recognized = r.recognize_wit(audio, key=cfg['service']['wit']['access_token'])
+                logging.info("using wit")
+                recognized = r.recognize_wit(audio, key=cfg['service']['wit']['access_token']).strip()
             elif 'ibm' == recognizer_type:
+                logging.info("using IBM")
                 if ibm_auth is None:
                     logging.info('Instantiating IBM recognizer')
                     ibm_auth = IAMA(apikey=cfg['ibm']['apikey'])
@@ -77,7 +79,7 @@ def start_voice_interface(cfg):
 
             logging.info(f"word `{recognized}` captured")
             # if this was a keyword - process a command
-            if recognized.lower() in keywords:
+            if recognized.strip().lower() in keywords:
                 print('Waiting for a command...')
                 with sr.Microphone() as source:
                     r.adjust_for_ambient_noise(source)
