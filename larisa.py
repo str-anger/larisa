@@ -4,6 +4,8 @@ import logic.processor as prc
 import speech_recognition as sr
 from ibm_watson import SpeechToTextV1
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator as IAMA
+import sounddevice
+
 
 def start_text_interface(cfg):
     logging.info("Starting text interface. Type `stop` to finish")
