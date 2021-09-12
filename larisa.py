@@ -5,8 +5,29 @@ import speech_recognition as sr
 from ibm_watson import SpeechToTextV1
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator as IAMA
 import sounddevice
+import requests
+import json
 
-
+def weather_forcast(city):
+    '''
+    #Author: Nils Becker
+    Gives a weather forecast for a specified city
+    :param city: String representation of city
+    :returns: expected temperature and weather description
+    '''
+    api_key = '71568538ec60ba9bc627d984a43dfadf'
+    url = 'https://openweathermap.org/data/2.5/weather?appid=' + '&q='+ city +'&APPID=' + api_key 
+    response = requests.get(url).json()
+    if response['cod']!='404':
+        main = response['main']
+        temperature = main['temp']
+        weather = response['weather']
+        description = weather[0]['description']
+        return (str(temperature+273)+"°C", description)
+    else:
+        print("City not found")
+        return ("","")
+    
 def start_text_interface(cfg):
     logging.info("Starting text interface. Type `stop` to finish")
     command = None
@@ -48,16 +69,17 @@ def start_voice_interface(cfg):
 
     while command != stopword:
         # wait for a trigger word
+        
         with sr.Microphone() as source:
-            print("Waiting for a word ...")
-            r.adjust_for_ambient_noise(source)
-            audio = r.listen(source)
-            # test the data comes
-            logging.info(f"Len: {len(audio.frame_data)}, Data: {audio.frame_data[:16]}")
+           print("Waiting for a word ...")
+           r.adjust_for_ambient_noise(source)
+           audio = r.listen(source)
+            #test the data comes
+           logging.info(f"Len: {len(audio.frame_data)}, Data: {audio.frame_data[:16]}")
 
         # simple way to replace if you don't have a micro
-        # with sr.AudioFile("/mnt/c/dev/voice.wav") as af:
-        #     audio = r.record(af)
+        #with sr.AudioFile("test.wav") as af:
+           # audio = r.record(af)
 
         try:
             # recognize a word
@@ -109,6 +131,8 @@ def start_voice_interface(cfg):
 
 
 if __name__ == "__main__":
+    print(weather_forcast("Stuttgart"))
+    sounddevice.query_devices()
     logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.INFO)
     logging.info("Larisa is starting")
     config = configparser.ConfigParser()
