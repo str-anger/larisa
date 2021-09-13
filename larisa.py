@@ -15,15 +15,15 @@ def weather_forcast(city):
     :param city: String representation of city
     :returns: expected temperature and weather description
     '''
-    api_key = '71568538ec60ba9bc627d984a43dfadf'
-    url = 'https://openweathermap.org/data/2.5/weather?appid=' + '&q='+ city +'&APPID=' + api_key 
+    api_key = '14ebab67cd0768d48dd1eb7545d89ac1'
+    url = 'http://api.openweathermap.org/data/2.5/weather?q=' + city + '&appid='+ api_key
     response = requests.get(url).json()
     if response['cod']!='404':
         main = response['main']
-        temperature = main['temp']
+        temperature = int(main['temp'])
         weather = response['weather']
         description = weather[0]['description']
-        return (str(temperature+273)+"°C", description)
+        return (city, str(temperature-275)+"°C", description)
     else:
         print("City not found")
         return ("","")
@@ -131,7 +131,7 @@ def start_voice_interface(cfg):
 
 
 if __name__ == "__main__":
-    print(weather_forcast("Stuttgart"))
+    print(weather_forcast("Moscow"))
     sounddevice.query_devices()
     logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.INFO)
     logging.info("Larisa is starting")
