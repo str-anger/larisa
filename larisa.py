@@ -6,27 +6,62 @@ from ibm_watson import SpeechToTextV1
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator as IAMA
 import sounddevice
 import requests
-import json
+from geopy import Nominatim
 
-def weather_forcast(city):
+def weather_forecast(city):
     '''
     #Author: Nils Becker
     Gives a weather forecast for a specified city
     :param city: String representation of city
-    :returns: expected temperature and weather description
+    :returns: weather forecast for now/ next 12h/ next 7 days in a List
     '''
+    locator = Nominatim(user_agent="Larissa")
+    location = locator.geocode(city)
     api_key = '14ebab67cd0768d48dd1eb7545d89ac1'
-    url = 'http://api.openweathermap.org/data/2.5/weather?q=' + city + '&appid='+ api_key
+    url = 'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude={}&appid={}'.format(location.latitude, location.longitude, "minutely,alerts", api_key)
     response = requests.get(url).json()
-    if response['cod']!='404':
-        main = response['main']
-        temperature = int(main['temp'])
-        weather = response['weather']
-        description = weather[0]['description']
-        return (city, str(temperature-275)+"°C", description)
-    else:
-        print("City not found")
-        return ("","")
+    result = []
+
+    current = response['current']
+    currentList = []
+    temperature = str((int(current['temp'])-273)) + "°C"
+    weather = current['weather']
+    description = weather[0]['description']
+    clouds = str(current['clouds']) + "%"+" clouds"
+    currentList.append(temperature)
+    currentList.append(description)
+    currentList.append(clouds)
+    result.append([currentList])
+
+    for option in ["hourly", "daily"]:
+        currentList=[]
+        current = response[option]
+        length = 13 if option == "hourly" else 8
+        for i in range(1,length):
+            temporary = current[i]
+            loopList=[i]
+            if option == "daily":
+                temp = temporary['temp']
+                average = str((int(temp['day'])-273))+ "°C"
+                min = str((int(temp['min'])-273)) +"°C"
+                max = str((int(temp['max'])-273)) +"°C"
+                loopList.append(average)
+                loopList.append(min)
+                loopList.append(max)
+            else:
+                temperature = str(int(temporary['temp'])-273) + "°C"
+                loopList.append(temperature)
+            weather = temporary['weather']
+            description = weather[0]['description']
+            clouds = str(temporary['clouds']) + "%"+" clouds"
+            pop = str(temporary['pop']*100) +"%"+" Chance of precipitation"
+            loopList.append(description)
+            loopList.append(clouds)
+            loopList.append(pop)
+            currentList.append(loopList)
+        result.append(currentList)
+        
+    return result
     
 def start_text_interface(cfg):
     logging.info("Starting text interface. Type `stop` to finish")
@@ -131,7 +166,11 @@ def start_voice_interface(cfg):
 
 
 if __name__ == "__main__":
-    print(weather_forcast("Moscow"))
+    weather = weather_forecast("Innopolis")
+    for contents in weather:
+        for content in contents:
+            print(content)
+        print("\n")
     sounddevice.query_devices()
     logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.INFO)
     logging.info("Larisa is starting")
