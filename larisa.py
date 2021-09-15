@@ -166,6 +166,7 @@ def start_voice_interface(cfg):
 
 
 if __name__ == "__main__":
+    #weather test
     weather = weather_forecast("Innopolis")
     for contents in weather:
         for content in contents:
