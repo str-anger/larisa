@@ -28,10 +28,10 @@ def weather_forecast(cfg, city):
     '''
     locator = Nominatim(user_agent="Larissa")
     location = locator.geocode(city)
-    #get free key from https://openweathermap.org/
+    #get key from https://openweathermap.org/
     api_key = cfg['weather']['apikey']
     try:
-    #create API request for given city
+        #create API request for given city
         url = 'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude={}&appid={}'.format(location.latitude, location.longitude, "minutely,alerts", api_key)
         response = requests.get(url).json()
     except AttributeError:
@@ -39,7 +39,7 @@ def weather_forecast(cfg, city):
         return None
     result = []
     try:
-    #get data
+        #get data
         current = response['current']
         currentList = []
         temperature = temperature_conversion(current['temp'])
@@ -128,7 +128,6 @@ def start_voice_interface(cfg):
 
     while command != stopword:
         # wait for a trigger word
-        
         with sr.Microphone() as source:
            print("Waiting for a word ...")
            r.adjust_for_ambient_noise(source)
