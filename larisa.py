@@ -8,59 +8,82 @@ import sounddevice
 import requests
 from geopy import Nominatim
 
-def weather_forecast(city):
+
+def temperature_conversion(temp):
+    '''
+    #Author: Nils Becker
+    Converts a given temperature in °K into a °C String representation
+    :param temp: Float Value of temperature in °K
+    :returns: The temperature converted to °C as a String
+    '''
+    return f"{int(temp)-273}°C"
+
+def weather_forecast(cfg, city):
     '''
     #Author: Nils Becker
     Gives a weather forecast for a specified city
+    :param cfg: Currently used configuration
     :param city: String representation of city
     :returns: weather forecast for now/ next 12h/ next 7 days in a List
     '''
     locator = Nominatim(user_agent="Larissa")
     location = locator.geocode(city)
-    api_key = '14ebab67cd0768d48dd1eb7545d89ac1'
-    url = 'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude={}&appid={}'.format(location.latitude, location.longitude, "minutely,alerts", api_key)
-    response = requests.get(url).json()
+    api_key = cfg['weather']['apikey']
+    try:
+    #create API request for given city
+        url = 'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude={}&appid={}'.format(location.latitude, location.longitude, "minutely,alerts", api_key)
+        response = requests.get(url).json()
+    except AttributeError:
+        logging.info("City not found")
+        return None
     result = []
+    try:
+    #get data
+        current = response['current']
+        currentList = []
+        temperature = temperature_conversion(current['temp'])
+        weather = current['weather']
+        description = weather[0]['description']
+        clouds = str(current['clouds']) + "%"+" clouds"
+        currentList.append(temperature)
+        currentList.append(description)
+        currentList.append(clouds)
+        result.append([currentList])
 
-    current = response['current']
-    currentList = []
-    temperature = str((int(current['temp'])-273)) + "°C"
-    weather = current['weather']
-    description = weather[0]['description']
-    clouds = str(current['clouds']) + "%"+" clouds"
-    currentList.append(temperature)
-    currentList.append(description)
-    currentList.append(clouds)
-    result.append([currentList])
+        for option in ["hourly", "daily"]:
 
-    for option in ["hourly", "daily"]:
-        currentList=[]
-        current = response[option]
-        length = 13 if option == "hourly" else 8
-        for i in range(1,length):
-            temporary = current[i]
-            loopList=[i]
-            if option == "daily":
-                temp = temporary['temp']
-                average = str((int(temp['day'])-273))+ "°C"
-                min = str((int(temp['min'])-273)) +"°C"
-                max = str((int(temp['max'])-273)) +"°C"
-                loopList.append(average)
-                loopList.append(min)
-                loopList.append(max)
-            else:
-                temperature = str(int(temporary['temp'])-273) + "°C"
-                loopList.append(temperature)
-            weather = temporary['weather']
-            description = weather[0]['description']
-            clouds = str(temporary['clouds']) + "%"+" clouds"
-            pop = str(temporary['pop']*100) +"%"+" Chance of precipitation"
-            loopList.append(description)
-            loopList.append(clouds)
-            loopList.append(pop)
-            currentList.append(loopList)
-        result.append(currentList)
-        
+            currentList=[]
+            current = response[option]
+            #if option == hourly, the next 12 hours are relevant -> length = 13
+            #if option == daily, the next 7 days are relevant -> length 8
+            length = 13 if option == "hourly" else 8 
+            for i in range (1, length):
+
+                temporary = current[i]
+                loopList=[i]
+                if option == "daily":
+                    temp = temporary['temp']
+                    average = temperature_conversion(temp['day'])
+                    min = temperature_conversion(temp['min'])
+                    max = temperature_conversion(temp['min'])
+                    loopList.append(average)
+                    loopList.append(min)
+                    loopList.append(max)
+                else:
+                    temperature = temperature_conversion(temporary['temp'])
+                    loopList.append(temperature)
+                weather = temporary['weather']
+                description = weather[0]['description']
+                clouds = f"{temporary['clouds']}% clouds"
+                pop = f"{temporary['pop']*100}% chance of precipation"
+                loopList.append(description)
+                loopList.append(clouds)
+                loopList.append(pop)
+                currentList.append(loopList)
+            result.append(currentList)
+    except:
+        logging.info("API Error")
+        return None    
     return result
     
 def start_text_interface(cfg):
@@ -113,8 +136,8 @@ def start_voice_interface(cfg):
            logging.info(f"Len: {len(audio.frame_data)}, Data: {audio.frame_data[:16]}")
 
         # simple way to replace if you don't have a micro
-        #with sr.AudioFile("test.wav") as af:
-           # audio = r.record(af)
+        # with sr.AudioFile("/mnt/c/dev/voice.wav") as af:
+        #     audio = r.record(af)
 
         try:
             # recognize a word
@@ -166,17 +189,16 @@ def start_voice_interface(cfg):
 
 
 if __name__ == "__main__":
-    #weather test
-    weather = weather_forecast("Innopolis")
-    for contents in weather:
-        for content in contents:
-            print(content)
-        print("\n")
     sounddevice.query_devices()
     logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.INFO)
     logging.info("Larisa is starting")
     config = configparser.ConfigParser()
     config.read('config.ini')
+    weather = weather_forecast(config,"Innopolis")
+    for contents in weather:
+        for content in contents:
+            print(content)
+        print("\n")
     if 'ui' not in config:
         logging.error("Config section [ui] is missing")
         exit(1)
