@@ -53,7 +53,7 @@ def weather_forecast(cfg, city):
         for option in ["hourly", "daily"]:
             #get hourly, then daily data
 
-            currentList=[]
+            currentList = []
             current = response[option]
             #if option == hourly, the next 12 hours are relevant -> length = 13
             #if option == daily, the next 7 days are relevant -> length 8
@@ -62,7 +62,7 @@ def weather_forecast(cfg, city):
                 #loop through the next 12 hours or next 7 days
 
                 temporary = current[i]
-                loopList=[i]
+                loopList = [i]
                 if option == "daily":
                     temp = temporary['temp']
                     average = temperature_conversion(temp['day'])
