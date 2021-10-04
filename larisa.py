@@ -129,11 +129,11 @@ def start_voice_interface(cfg):
     while command != stopword:
         # wait for a trigger word
         with sr.Microphone() as source:
-           print("Waiting for a word ...")
-           r.adjust_for_ambient_noise(source)
-           audio = r.listen(source)
+            print("Waiting for a word ...")
+            r.adjust_for_ambient_noise(source)
+            audio = r.listen(source)
             #test the data comes
-           logging.info(f"Len: {len(audio.frame_data)}, Data: {audio.frame_data[:16]}")
+            logging.info(f"Len: {len(audio.frame_data)}, Data: {audio.frame_data[:16]}")
 
         # simple way to replace if you don't have a micro
         # with sr.AudioFile("/mnt/c/dev/voice.wav") as af:
