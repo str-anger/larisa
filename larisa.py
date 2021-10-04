@@ -28,13 +28,14 @@ def weather_forecast(cfg, city):
     '''
     locator = Nominatim(user_agent="Larissa")
     location = locator.geocode(city)
+    #get free key from https://openweathermap.org/
     api_key = cfg['weather']['apikey']
     try:
     #create API request for given city
         url = 'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude={}&appid={}'.format(location.latitude, location.longitude, "minutely,alerts", api_key)
         response = requests.get(url).json()
     except AttributeError:
-        logging.info("City not found")
+        logging.error("City not found")
         return None
     result = []
     try:
@@ -51,6 +52,7 @@ def weather_forecast(cfg, city):
         result.append([currentList])
 
         for option in ["hourly", "daily"]:
+            #get hourly, then daily data
 
             currentList=[]
             current = response[option]
@@ -58,6 +60,7 @@ def weather_forecast(cfg, city):
             #if option == daily, the next 7 days are relevant -> length 8
             length = 13 if option == "hourly" else 8 
             for i in range (1, length):
+                #loop through the next 12 hours or next 7 days
 
                 temporary = current[i]
                 loopList=[i]
@@ -81,8 +84,8 @@ def weather_forecast(cfg, city):
                 loopList.append(pop)
                 currentList.append(loopList)
             result.append(currentList)
-    except:
-        logging.info("API Error")
+    except TypeError:
+        logging.error("Weather API Error")
         return None    
     return result
     
@@ -103,7 +106,6 @@ def start_web_interface(cfg):
     """
     logging.warning("Not implemented yet")
     pass
-
 
 def start_voice_interface(cfg):
     """
@@ -194,11 +196,6 @@ if __name__ == "__main__":
     logging.info("Larisa is starting")
     config = configparser.ConfigParser()
     config.read('config.ini')
-    weather = weather_forecast(config,"Innopolis")
-    for contents in weather:
-        for content in contents:
-            print(content)
-        print("\n")
     if 'ui' not in config:
         logging.error("Config section [ui] is missing")
         exit(1)
