@@ -35,7 +35,7 @@ def weather_forecast(cfg, city):
         url = 'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude={}&appid={}'.format(location.latitude, location.longitude, "minutely,alerts", api_key)
         response = requests.get(url).json()
     except AttributeError:
-        logging.error("City not found")
+        logging.error(f"City {city} not found!")
         return None
     result = []
     try:
@@ -50,7 +50,6 @@ def weather_forecast(cfg, city):
         currentList.append(description)
         currentList.append(clouds)
         result.append([currentList])
-
         for option in ["hourly", "daily"]:
             #get hourly, then daily data
 
