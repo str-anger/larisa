@@ -70,7 +70,7 @@ def _weather(cfg, city, logging):
         response = requests.get(url).json()
     except AttributeError:
         logging.error(f"City {city} not found!")
-        return []
+        return Response(text = f"City {city} not found!")
     result = []
     try:
         #get data
@@ -99,9 +99,9 @@ def _weather(cfg, city, logging):
                 loopList = [i]
                 if option == "daily":
                     temp = temporary['temp']
-                    average = temperature_conversion(temp['day'], logging)
-                    min = temperature_conversion(temp['min'], logging)
-                    max = temperature_conversion(temp['min'], logging)
+                    average = f"{temperature_conversion(temp['day'], logging)} average"
+                    min = f"{temperature_conversion(temp['min'], logging)} minimum"
+                    max = f"{temperature_conversion(temp['max'], logging)} maximum"
                     loopList.append(average)
                     loopList.append(min)
                     loopList.append(max)
@@ -119,13 +119,26 @@ def _weather(cfg, city, logging):
             result.append(currentList)
     except KeyError as e:
         logging.error(f"{e} Weather API Error: Field {e} not available")
-        return [] 
+        return Response(f"{e} Weather API Error: Field {e} not available")
     except TypeError as e:
-        logging.error("Weather API Error: Field {e} returned None")
-        return []    
-    return Response(text = result)
-
-
+        logging.error(f"Weather API Error: Field {e} returned None")
+        return Response(text = "Weather API Error: Field {e} returned None") 
+       
+    text = f" \nWeather forecast for {city}:\n\nNow:\n"
+    for content1 in result[0]:
+        for content2 in content1:
+            text += f"{content2}, "  
+    text = f"{text}\n\nNext 12h:\n"
+    for content1 in result[1]:
+        for content2 in content1:
+            text = f"{text} {content2}, "
+        text += "\n"
+    text = f"{text}\nNext 7 days:\n"
+    for content1 in result[2]:
+        for content2 in content1:
+            text = f"{text} {content2}, "
+        text += "\n"
+    return Response(text = text)
 
 def process(command, cfg, logging):
     logging.info(f"Processing command `{command}`")
