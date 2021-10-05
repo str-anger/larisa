@@ -13,10 +13,14 @@ def temperature_conversion(temp):
     '''
     #Author: Nils Becker
     Converts a given temperature in °K into a °C String representation
-    :param temp: Float Value of temperature in °K
+    :param temp: Float or int Value of temperature in °K
     :returns: The temperature converted to °C as a String
     '''
-    return f"{int(temp)-273}°C"
+    try:
+        return f"{int(temp)-273}°C"
+    except ValueError:
+        logging.error(f"{temp} must be an int or float")
+        pass
 
 def weather_forecast(cfg, city):
     '''
@@ -36,16 +40,16 @@ def weather_forecast(cfg, city):
         response = requests.get(url).json()
     except AttributeError:
         logging.error(f"City {city} not found!")
-        return None
+        return []
     result = []
     try:
         #get data
-        current = response['current']
+        current = response['curent']
         currentList = []
         temperature = temperature_conversion(current['temp'])
         weather = current['weather']
         description = weather[0]['description']
-        clouds = str(current['clouds']) + "%"+" clouds"
+        clouds = f"{current['clouds']}% clouds"
         currentList.append(temperature)
         currentList.append(description)
         currentList.append(clouds)
@@ -83,9 +87,12 @@ def weather_forecast(cfg, city):
                 loopList.append(pop)
                 currentList.append(loopList)
             result.append(currentList)
-    except TypeError:
-        logging.error("Weather API Error")
-        return None    
+    except KeyError as e:
+        logging.error(f"{e} Weather API Error: Field {e} not available")
+        return [] 
+    except TypeError as e:
+        logging.error("Weather API Error: Field {e} returned None")
+        return []    
     return result
     
 def start_text_interface(cfg):
@@ -194,6 +201,7 @@ if __name__ == "__main__":
     logging.info("Larisa is starting")
     config = configparser.ConfigParser()
     config.read('config.ini')
+    weather = weather_forecast(config,"Innopolis")
     if 'ui' not in config:
         logging.error("Config section [ui] is missing")
         exit(1)
