@@ -24,6 +24,7 @@ def start_web_interface(cfg):
     logging.warning("Not implemented yet")
     pass
 
+
 def start_voice_interface(cfg):
     """
     Starts the voice loop
