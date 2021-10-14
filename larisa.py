@@ -4,7 +4,8 @@ import logic.processor as prc
 import speech_recognition as sr
 from ibm_watson import SpeechToTextV1
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator as IAMA
-
+import sounddevice
+    
 def start_text_interface(cfg):
     logging.info("Starting text interface. Type `stop` to finish")
     command = None
@@ -107,6 +108,7 @@ def start_voice_interface(cfg):
 
 
 if __name__ == "__main__":
+    sounddevice.query_devices()
     logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.INFO)
     logging.info("Larisa is starting")
     config = configparser.ConfigParser()
