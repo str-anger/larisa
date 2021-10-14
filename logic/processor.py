@@ -1,5 +1,6 @@
 import requests
-from geopy import Nominatim
+import geocoder
+from geopy.geocoders import Nominatim
 
 class Response:
     def __init__(self, text=None, payload=None, status='ok'):
@@ -39,7 +40,7 @@ def _translate(text):
     return Response(text="")
 
     
-def temperature_conversion(temp,logging):
+def temperature_conversion(temp, logging):
     '''
     #Author: Nils Becker
     Converts a given temperature in °K into a °C String representation
@@ -52,21 +53,34 @@ def temperature_conversion(temp,logging):
         logging.error(f"{temp} must be an int or float")
         pass
 
-def _weather(cfg, city, logging):
+def _weather(cfg, logging):
     '''
     #Author: Nils Becker
     Gives a weather forecast for a specified city
     :param cfg: Currently used configuration
-    :param city: String representation of city
     :returns: weather forecast for now/ next 12h/ next 7 days in a List
     '''
+    ip = geocoder.ip("me")
+    location = ip.latlng
     locator = Nominatim(user_agent="Larissa")
-    location = locator.geocode(city)
+    try:
+        #get city and country from ip adress
+        loc = locator.reverse(f'{location[0]},{location[1]}').raw['address']
+        city = loc.get('city', '')
+        country = loc.get('country', '')
+        if city == "":
+            city = loc.get('town')
+            if city == "":
+                city = location
+    except AttributeError:
+        logging.error(f'No data for coordinates {location} found!')
+        return Response(f'No data for coordinates {location} found!')
+    
     #get key from https://openweathermap.org/
     api_key = cfg['weather']['apikey']
     try:
         #create API request for given city
-        url = 'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude={}&appid={}'.format(location.latitude, location.longitude, "minutely,alerts", api_key)
+        url = 'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude={}&appid={}'.format(location[0], location[1], "minutely,alerts", api_key)
         response = requests.get(url).json()
     except AttributeError:
         logging.error(f"City {city} not found!")
@@ -124,7 +138,7 @@ def _weather(cfg, city, logging):
         logging.error(f"Weather API Error: Field {e} returned None")
         return Response(text = "Weather API Error: Field {e} returned None") 
        
-    text = f" \nWeather forecast for {city}:\n\nNow:\n"
+    text = f" \nWeather forecast for {city}, {country}:\n\nNow:\n"
     for content1 in result[0]:
         for content2 in content1:
             text += f"{content2}, "  
@@ -148,6 +162,6 @@ def process(command, cfg, logging):
     elif 'translate' == intent:
         return _translate(text)
     elif 'weather' == intent:
-        return _weather(cfg, "Innopolis", logging)
+        return _weather(cfg, logging)
 
     return None

@@ -50,7 +50,7 @@ def start_voice_interface(cfg):
             print("Waiting for a word ...")
             r.adjust_for_ambient_noise(source)
             audio = r.listen(source)
-            #test the data comes
+            # test the data comes
             logging.info(f"Len: {len(audio.frame_data)}, Data: {audio.frame_data[:16]}")
 
         # simple way to replace if you don't have a micro
