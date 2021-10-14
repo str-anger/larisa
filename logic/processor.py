@@ -45,6 +45,7 @@ def temperature_conversion(temp, logging):
     #Author: Nils Becker
     Converts a given temperature in °K into a °C String representation
     :param temp: Float or int Value of temperature in °K
+    :param logging: Currently used instance of logging module
     :returns: The temperature converted to °C as a String
     '''
     try:
@@ -58,6 +59,7 @@ def _weather(cfg, logging):
     #Author: Nils Becker
     Gives a weather forecast for a specified city
     :param cfg: Currently used configuration
+    :param logging: Currently used instance of logging module
     :returns: weather forecast for now/ next 12h/ next 7 days in a List
     '''
     ip = geocoder.ip("me")
